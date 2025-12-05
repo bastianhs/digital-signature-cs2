@@ -1,3 +1,4 @@
+import base64
 import zipfile
 from constants import SIG_FILENAME
 from cryptography.hazmat.primitives import hashes
@@ -63,14 +64,20 @@ def sign(zip_path, private_key_path):
         content_hash,
         padding.PSS(
             mgf=padding.MGF1(hashes.SHA256()),
-            salt_length=padding.PSS.MAX_LENGTH
+            salt_length=0  # deterministic signature with no salt
         ),
         hashes.SHA256()
     )
 
+    # TEST: corrupt signature by flipping one byte
+    # signature = signature[:-1] + bytes([signature[-1] ^ 0xFF])
+
+    # encode signature to base64 for readable format
+    signature_b64 = base64.b64encode(signature).decode("utf-8")
+
     # add signature to zip content
     with zipfile.ZipFile(zip_path, "a") as zout:
-        zout.writestr(SIG_FILENAME, signature)
+        zout.writestr(SIG_FILENAME, signature_b64)
 
 def verify(zip_path, public_key_path):
     # load public key
@@ -83,7 +90,9 @@ def verify(zip_path, public_key_path):
             if SIG_FILENAME not in zin.namelist():
                 return False
             
-            signature = zin.read(SIG_FILENAME)
+            signature_b64 = zin.read(SIG_FILENAME).decode("utf-8")
+            # decode base64 signature back to bytes
+            signature = base64.b64decode(signature_b64)
 
         # recalculate hash of content (excluding the signature file)
         current_content_hash = hash_zip_content(zip_path)

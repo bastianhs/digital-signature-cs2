@@ -40,3 +40,6 @@
      ```shell
      python3 src/main.py verify path/to/modfile.zip path/to/public_key.pem
      ```
+
+## Example Mod Source
+- [Traffic 0.2.11.0](https://mods.paradoxplaza.com/mods/80095/Windows/?version=25)
